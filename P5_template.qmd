@@ -1,0 +1,625 @@
+---
+title: "Client Report - The War with Star Wars"
+subtitle: "Course DS 250"
+author: "Chance Edwards"
+format:
+  html:
+    self-contained: true
+    page-layout: full
+    title-block-banner: true
+    toc: true
+    toc-depth: 3
+    toc-location: body
+    number-sections: false
+    html-math-method: katex
+    code-fold: true
+    code-summary: "Show the code"
+    code-overflow: wrap
+    code-copy: hover
+    code-tools:
+        source: false
+        toggle: true
+        caption: See code
+execute: 
+  warning: false
+    
+---
+
+
+## Elevator pitch
+
+Based on my findings, a majority of the fans are in the west, central and south of the US. but not but big of margin as the respondents are well distrubuted througout the US. With that, we found that the most favorable characters, not popular, are the main cast of the original trilogy. Which is understandable comparing the quality of the film from the prequels to the original trilogy. Also, 39% of the respondent said that Han shot first, and 24% say greedo shot first. Mind you, 37% of the respondents replied that they didn't understand the question. With that in mind, we can assume that 37% of the respondents are probably not super-fans. 
+
+## QUESTION|TASK 1
+
+__Shorten the column names and clean them up for easier use with pandas.__ Provide a table or list that exemplifies how you fixed the names. 
+
+
+```{python}
+# Include and execute your code here
+import chardet
+import pandas as pd
+
+# This dectects the file and allows to be read correctly
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+#1 Shorten the column names and clean them up for easier use with pandas. 
+# Provide a table or list that exemplifies how you fixed the names.
+Star_Wars.columns = (
+    Star_Wars.columns
+    .str.strip()                # remove leading/trailing spaces
+    .str.lower()                # lowercase for consistency
+    .str.replace(' ', '_')      # replace spaces with underscores
+    .str.replace('-', '_')      # replace dashes with underscores
+    .str.replace(r'[^a-z0-9_]', '', regex=True)  # remove special chars
+)
+
+# Show data
+display(Star_Wars)
+
+```
+
+
+## QUESTION|TASK 2
+
+__Clean and format the data so that it can be used in a machine learning model.__ As you format the data, you should complete each item listed below. In your final report provide example(s) of the reformatted data with a short description of the changes made.  
+    a. Filter the dataset to respondents that have seen at least one film  
+    a. Create a new column that converts the age ranges to a single number. Drop the age range categorical column  
+    a. Create a new column that converts the education groupings to a single number. Drop the school categorical column  
+    a. Create a new column that converts the income ranges to a single number. Drop the income range categorical column  
+    a. Create your target (also known as “y” or “label”) column based on the new income range column  
+    a. One-hot encode all remaining categorical columns   
+
+
+```{python}
+# Include and execute your code here
+import chardet
+import pandas as pd
+
+# This dectects the file and allows to be read correctly
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+Star_Wars.columns = (
+    Star_Wars.columns
+    .str.strip()                # remove leading/trailing spaces
+    .str.lower()                # lowercase for consistency
+    .str.replace(' ', '_')      # replace spaces with underscores
+    .str.replace('-', '_')      # replace dashes with underscores
+    .str.replace(r'[^a-z0-9_]', '', regex=True)  # remove special chars
+)
+
+# a). Filter the dataset to respondents that have seen at least one film
+Star_Wars = Star_Wars[Star_Wars['have_you_seen_any_of_the_6_films_in_the_star_wars_franchise'] == 'Yes']
+
+# b). Create a new column that converts the age ranges to a single number. Drop the age range categorical column
+age_mapping = {
+    '18-29': 23.5,
+    '30-44': 37,
+    '45-60': 52.5,
+    '60+': 65
+}
+Star_Wars['age_num'] = Star_Wars['age'].map(age_mapping)
+Star_Wars = Star_Wars.drop(columns=['age'])
+
+# c). Create a new column that converts the education groupings to a single number. Drop the school categorical column
+education_mapping = {
+    'Some high school': 10,
+    'High school graduate': 12,
+    'Some college or Associate degree': 14,
+    'Bachelor degree': 16,
+    'Graduate degree': 18
+}
+Star_Wars['education_num'] = Star_Wars['education'].map(education_mapping)
+Star_Wars = Star_Wars.drop(columns=['education'])  # drop original categorical
+
+
+# d). Create a new column that converts the income ranges to a single number. Drop the income range categorical column
+income_mapping = {
+    'Under $20,000': 15000,
+    '$20,000 - $39,999': 30000,
+    '$40,000 - $59,999': 50000,
+    '$60,000 - $79,999': 70000,
+    '$80,000 - $99,999': 90000,
+    '$100,000 - $149,999': 125000,
+    '$150,000 and over': 175000
+}
+
+Star_Wars['income'] = Star_Wars['household_income'].map(income_mapping)
+Star_Wars = Star_Wars.drop(columns=['household_income'])
+
+# e). Create your target (also known as “y” or “label”) column based on the new income range column
+Star_Wars['high_income'] = (Star_Wars['income'] >= 100000).astype(int)
+
+# f). One-hot encode all remaining categorical columns
+categorical_cols = Star_Wars.select_dtypes(include=['object']).columns
+Star_Wars = pd.get_dummies(Star_Wars, columns=categorical_cols, drop_first=True)
+
+# Preview cleaned and formatted dataset
+display(Star_Wars.head())
+print('Data shape:', Star_Wars.shape)
+
+display(Star_Wars)
+
+
+```
+
+## QUESTION|TASK 3
+
+__Validate that the data provided on GitHub lines up with the article by recreating 2 of the visuals from the article.__  
+
+The two graphs I recreated was "Who shot first?" and "Most favorable character". Now in regards to the age old Star Wars Question, who shot first, the data presented 39 % said Han shot first, while 37% did not understand the question. As a Star Wars fan myself and one who is deeply involved with the franchise, I am assouming that those 37% of the respondents are people who have seen the movies a couple of times in their life or a new fans as of the past 10 years. 
+The second graph shows who it the most favorable character. The results show Luke, Leia, Han, Obi-Wan, C-3P0, and R2-D2 are the most favorable. Which fits due to the origianl trilogy being extremly superior to the prequels. I say this as prequels fan as well.
+
+```{python}
+# Include and execute your code here
+### 3). 
+
+import chardet
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+
+# This detects the file encoding and allows it to be read correctly
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+# print(Star_Wars.columns) # Helps with what I am grabbing
+
+## ---------------------------
+## Visual 1: Who Shot First
+## ---------------------------
+
+Shot = Star_Wars['Which character shot first?']
+Shot_clean = Shot.dropna()
+len_clea_shot = len(Shot_clean)
+
+Shot_mapping = {
+    "Han": "Han",
+    "Greedo": "Greedo",
+    "I don't understand this question": "I don't understand this question"
+}
+
+# Calculation character percentages for the single "Shot" column
+def calculate_perc(series):
+    mapped_shot = series.map(Shot_mapping)
+    counts = mapped_shot.value_counts(normalize=True) * 100
+    # Ensure all categories are present
+    for cat in ['Han', 'Greedo', "I don't understand this question"]:
+        if cat not in counts.index:
+            counts[cat] = 0.0
+    # Return ordered Series
+    return counts[['Han', 'Greedo', "I don't understand this question"]]
+
+percentages_Shots = calculate_perc(Shot_clean)
+# Convert to a single-row DataFrame to match previous output shape
+per_Shots_df = percentages_Shots.to_frame().T
+per_Shots_df.index = ['who_shot_first']
+
+
+# Plot
+fig, ax = plt.subplots(figsize=(8, 5))
+bars = ax.barh(per_Shots_df.columns, per_Shots_df.iloc[0], color='#1f77b4')
+# Add percentage labels beside bars
+for bar in bars:
+    width = bar.get_width()
+    ax.text(
+        width + 1,
+        bar.get_y() + bar.get_height()/2,
+        f'{int(round(width))}%',
+        va='center',
+        ha='left',
+        fontsize=10,
+        color='black'
+    )
+# Formatting
+ax.set_title('"Star Wars" Fans: Who Shot First?\nBy 834 respondents')
+ax.set_xlabel('Percentage of Responses')
+ax.set_xlim(0, 105)
+plt.tight_layout()
+plt.figtext(0.99, 0.01, 'SOURCE: SURVEYMONKEY AUDIENCE', ha='right', fontsize=8)
+plt.figtext(0.01, 0.01, 'FIVETHIRTYEIGHT', ha='left', fontsize=8)
+plt.show()  
+
+## -------------------------------
+## Visual 2: Which Character is preferred
+## -------------------------------
+
+char_cols = Star_Wars.iloc[:, 15:29]
+character_names = char_cols.iloc[0].tolist()
+char_cols = char_cols[1:].copy()
+char_cols.columns = character_names
+
+rating_mapping = {
+    'Very favorably': 'Favorable',
+    'Somewhat favorably': 'Favorable',
+    'Neither favorably nor unfavorably': 'Neutral',
+    'Somewhat unfavorably': 'Unfavorable',
+    'Very unfavorably': 'Unfavorable',
+    'Unfamiliar (N/A)': 'Unfamiliar'
+}
+
+def calculate_percentages(series):
+    mapped = series.map(rating_mapping)
+    counts = mapped.value_counts(normalize=True) * 100
+    for cat in ['Favorable','Neutral','Unfavorable','Unfamiliar']:
+        if cat not in counts.index:
+            counts[cat] = 0.0
+    return counts[['Favorable', 'Neutral', 'Unfavorable', 'Unfamiliar']]
+
+percentages = {}
+for char in char_cols.columns:
+    clean_series = char_cols[char].dropna()
+    if not clean_series.empty:
+        percentages[char] = calculate_percentages(clean_series)
+
+perc_df = pd.DataFrame(percentages).T
+perc_df = perc_df.sort_values(by='Favorable', ascending=False)
+
+# --- Plotting ---
+categories = ['Favorable','Neutral','Unfavorable','Unfamiliar']
+colors = ['#2ca02c', '#1f77b4', '#d62728', '#7f7f7f']
+y = np.arange(len(perc_df.index))
+height = 0.2
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+# Plot each category horizontally
+for i, cat in enumerate(categories):
+    bars = ax.barh(y + i*height, perc_df[cat], height, label=cat, color=colors[i])
+    
+    # Add percentage labels beside bars
+    for bar in bars:
+        width = bar.get_width()
+        if width > 3:
+            ax.text(
+                width + 1,
+                bar.get_y() + bar.get_height()/2,
+                f'{int(round(width))}%',
+                va='center',
+                ha='left',
+                fontsize=8,
+                color='black'
+            )
+
+# Formatting
+ax.set_title('"Star Wars" Character Favorability Ratings\nBy 834 respondents')
+ax.set_yticks(y + height*(len(categories)-1)/2)
+ax.set_yticklabels(perc_df.index)
+ax.set_xlabel('Percentage of Responses')
+ax.set_xlim(0, 105)
+ax.legend(title='', loc='upper right')
+plt.tight_layout()
+plt.figtext(0.99, 0.01, 'SOURCE: SURVEYMONKEY AUDIENCE', ha='right', fontsize=8)
+plt.figtext(0.01, 0.01, 'FIVETHIRTYEIGHT', ha='left', fontsize=8)
+plt.show()
+
+
+```
+
+
+## QUESTION|TASK 4
+
+__Build a machine learning model that predicts whether a person makes more than $50k. Describe your model and report the accuracy.__ 
+
+I will be honest, I am still having trouble understanding this.
+
+```{python}
+# Include and execute your code here
+import chardet
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.ensemble import HistGradientBoostingClassifier
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+### 4. Machine Learning Model
+  
+# Load and clean the dataset
+
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+print(result)
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+# Clean column names
+Star_Wars.columns = (
+    Star_Wars.columns
+    .str.strip()
+    .str.lower()
+    .str.replace(' ', '_')
+    .str.replace('-', '_')
+    .str.replace(r'[^a-z0-9_]', '', regex=True)
+)
+
+# a) Filter respondents who have seen at least one film
+Star_Wars = Star_Wars[Star_Wars['have_you_seen_any_of_the_6_films_in_the_star_wars_franchise'] == 'Yes']
+
+# b) Convert age ranges to numeric
+age_mapping = {'18-29': 23.5, '30-44': 37, '45-60': 52.5, '60+': 65}
+Star_Wars['age_num'] = Star_Wars['age'].map(age_mapping)
+Star_Wars = Star_Wars.drop(columns=['age'])
+
+# c) Convert education to numeric
+education_mapping = {
+    'Some high school': 10,
+    'High school graduate': 12,
+    'Some college or Associate degree': 14,
+    'Bachelor degree': 16,
+    'Graduate degree': 18
+}
+Star_Wars['education_num'] = Star_Wars['education'].map(education_mapping)
+Star_Wars = Star_Wars.drop(columns=['education'])
+
+# d) Convert income ranges to numeric
+income_mapping = {
+    'Under $20,000': 15000,
+    '$20,000 - $39,999': 30000,
+    '$40,000 - $59,999': 50000,
+    '$60,000 - $79,999': 70000,
+    '$80,000 - $99,999': 90000,
+    '$100,000 - $149,999': 125000,
+    '$150,000 and over': 175000
+}
+Star_Wars['income'] = Star_Wars['household_income'].map(income_mapping)
+Star_Wars = Star_Wars.drop(columns=['household_income'])
+
+# e) Create target column
+Star_Wars['high_income'] = (Star_Wars['income'] >= 100000).astype(int)
+
+# f) One-hot encode remaining categorical columns
+categorical_cols = Star_Wars.select_dtypes(include=['object']).columns
+Star_Wars = pd.get_dummies(Star_Wars, columns=categorical_cols, drop_first=True)
+
+# Machine Learning Model
+
+X = Star_Wars.drop(columns=['high_income'])
+y = Star_Wars['high_income']
+
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# HistGradientBoosting handles NaNs natively
+model = HistGradientBoostingClassifier()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Accuracy
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+# Classification report
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# Confusion matrix visualization
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
+```
+
+---
+
+## STRETCH QUESTION|TASK 1
+
+__Build a machine learning model that predicts whether a person makes more than $50k. With accuracy of at least 65%. Describe your model and report the accuracy.__
+
+I kinda got the same results by doing it differently. 
+
+```{python}
+# Include and execute your code here
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import chardet
+
+# Data set
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+# Data cleaning and preprocessing steps as before
+Star_Wars.columns = (
+    Star_Wars.columns
+    .str.strip()
+    .str.lower()
+    .str.replace(' ', '_')
+    .str.replace('-', '_')
+    .str.replace(r'[^a-z0-9_]', '', regex=True)
+)
+
+Star_Wars = Star_Wars[Star_Wars['have_you_seen_any_of_the_6_films_in_the_star_wars_franchise'] == 'Yes']
+
+age_mapping = {'18-29': 23.5, '30-44': 37, '45-60': 52.5, '60+': 65}
+Star_Wars['age_num'] = Star_Wars['age'].map(age_mapping)
+Star_Wars = Star_Wars.drop(columns=['age'])
+
+education_mapping = {
+    'Some high school': 10,
+    'High school graduate': 12,
+    'Some college or Associate degree': 14,
+    'Bachelor degree': 16,
+    'Graduate degree': 18
+}
+Star_Wars['education_num'] = Star_Wars['education'].map(education_mapping)
+Star_Wars = Star_Wars.drop(columns=['education'])
+
+income_mapping = {
+    'Under $20,000': 15000,
+    '$20,000 - $39,999': 30000,
+    '$40,000 - $59,999': 50000,
+    '$60,000 - $79,999': 70000,
+    '$80,000 - $99,999': 90000,
+    '$100,000 - $149,999': 125000,
+    '$150,000 and over': 175000
+}
+Star_Wars['income'] = Star_Wars['household_income'].map(income_mapping)
+Star_Wars = Star_Wars.drop(columns=['household_income'])
+
+# ✅ Adjusted cutoff: > $50k
+Star_Wars['high_income'] = (Star_Wars['income'] > 50000).astype(int)
+
+categorical_cols = Star_Wars.select_dtypes(include=['object']).columns
+Star_Wars = pd.get_dummies(Star_Wars, columns=categorical_cols, drop_first=True)
+
+X = Star_Wars.drop(columns=['high_income'])
+y = Star_Wars['high_income']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = HistGradientBoostingClassifier()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+print("Model Accuracy:", accuracy)
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
+
+```
+
+
+## STRETCH QUESTION|TASK 2
+
+__Validate the data provided on GitHub lines up with the article by recreating a 3rd visual from the article.__
+
+I recreated the graph which movies were seen. The thing that surprises me the most is that A New Hope if significantly less than Empire Strikes back. A New Hope (when adjusted for inflation) is the second highest grossing movie of all time. So to see if less than Empire is strange.
+
+```{python}
+# Include and execute your code here
+import chardet
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+
+# Load Data
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+# Clean column names
+Star_Wars.columns = (
+    Star_Wars.columns
+    .str.strip()
+    .str.lower()
+    .str.replace(' ', '_')
+    .str.replace('-', '_')
+    .str.replace(r'[^a-z0-9_]', '', regex=True)
+)
+
+# Filter respondents
+Star_Wars = Star_Wars[Star_Wars['have_you_seen_any_of_the_6_films_in_the_star_wars_franchise'] == 'Yes']
+seen_data = Star_Wars.iloc[:, 3:9].copy()
+
+# Renaming columns
+ordered_titles = [
+    'The Phantom Menace',
+    'Attack of the Clones',
+    'Revenge of the Sith',
+    'A New Hope',
+    'The Empire Strikes Back',
+    'Return of the Jedi'
+]
+seen_data.columns = ordered_titles
+
+# Clean values and calculate percentages
+seen_data = seen_data.notnull().replace({True: 'Yes', False: 'No'})
+
+# Calculate percentages
+seen_percentages = (seen_data == 'Yes').sum() / len(seen_data) * 100
+seen_percentages = seen_percentages.reindex(ordered_titles).fillna(0)
+
+
+# Plot
+plt.figure(figsize=(10, 6))
+bars = plt.barh(seen_percentages.index, seen_percentages.values, color='steelblue')
+
+for bar in bars:
+    width = bar.get_width()
+    plt.text(width + 1, bar.get_y() + bar.get_height()/2, 
+             f'{width:.0f}%', 
+             va='center')
+
+plt.title("Which 'Star Wars' movie have you seen?")
+plt.xlabel('Percentage of Respondents')
+plt.ylabel('Movie Title')
+plt.xlim(0, 110) 
+plt.tight_layout()
+plt.show()
+
+```
+
+
+## STRETCH QUESTION|TASK 3
+
+__Create a new column that converts the location groupings to a single number. Drop the location categorical column.__  
+
+There is pretty even distrubution of Respondents across the US, the mojority being in the pacific, East North central, and South Atlantic.
+
+```{python}
+# Include and execute your code here
+# Create a new column that converts the location groupings to a single number. Drop the location categorical column.
+
+import chardet
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+
+# Load Data
+with open('StarWars.csv', 'rb') as f:
+    result = chardet.detect(f.read(100000))  # sample first 100k bytes
+Star_Wars = pd.read_csv('StarWars.csv', encoding=result['encoding'])
+
+# Clean column names
+Star_Wars['location'] = (
+    Star_Wars['Location (Census Region)']
+    .str.strip()
+    .str.title()   # ensures consistent capitalization (e.g., "Midwest")
+    .str.replace('U.S.', 'US')  # fix common variation
+)
+
+# Location mapping
+location_mapping = {
+    'New England': 1,
+    'Middle Atlantic': 1,
+    'East North Central': 2,
+    'West North Central': 2,
+    'South Atlantic': 3,
+    'East South Central': 3,
+    'West South Central': 3,
+    'Mountain': 4,
+    'Pacific': 4,
+    'Outside US': 5
+}
+
+Star_Wars['location_num'] = Star_Wars['location'].map(location_mapping)
+Star_Wars = Star_Wars.drop(columns=['Location (Census Region)'])
+display(Star_Wars[['location', 'location_num']].head(5))
+
+# Plotting
+location_counts = Star_Wars['location'].value_counts(normalize=True) * 100
+location_counts = location_counts.reindex(location_mapping.keys()).fillna(0)
+plt.figure(figsize=(8,6))
+pie = plt.pie(location_counts, labels=location_counts.index, autopct='%1.1f%%', startangle = 140)
+plt.title("Respondent Distrubution by location")
+plt.axis('equal')
+plt.show()
+
+```
+
+---
